@@ -1,8 +1,17 @@
 var bodyParser = require('body-parser');
 var express = require('express');
 var SerialPort = require('serialport');
+var childProcess = require('child_process');
+var fs = require('fs');
+var FormData = require('form-data');
+const ngrok = require('ngrok');
+
+
+
 
 var app = express();
+
+var ffmpegParams = ['ffmpeg', '-i', '/dev/video0', '-frames', '1', './output.jpg']
 
 app.use(function (req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
@@ -53,10 +62,22 @@ app.post('/dispose', (req, res) => {
 })
 
 
-// sensorPort.on('readable', async function () {
-//     var str = await port2.read().toString();
-//     if(str.includes("trash detected")) {
-//         //run ffmpeg
-//         //send image to ML
-//     }
-// });
+sensorPort.on('readable', async function () {
+    var str = await sensorPort.read().toString();
+    if (str.includes("trash detected")) {
+
+        //run ffmpeg
+        childProcess.spawnSync('ffmpeg', ffmpegParams);
+
+        //send image to ML
+        var formData = {
+            file: fs.createReadStream('output.jpg')
+        };
+        request.post({ url: '<YourUrl>', formData: formData }, (err, httpResponse, body) => {
+            if (err) {
+                return console.error('upload failed:', err);
+            }
+            console.log('Upload successful!  Server responded with:', body);
+        });
+    }
+});
